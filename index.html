@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Campus Shuttle Route Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-deep: #0b1220;
+      --bg-card: #121a2b;
+      --bg-elevated: #1a2438;
+      --bg-hover: #243049;
+      --border: #2a3a55;
+      --border-soft: #1e2d45;
+      --text: #e8eef8;
+      --text-muted: #8b9bb8;
+      --text-dim: #5a6b88;
+      --accent: #3b82f6;
+      --accent-soft: rgba(59, 130, 246, 0.15);
+      --accent-glow: rgba(59, 130, 246, 0.35);
+      --success: #22c55e;
+      --success-soft: rgba(34, 197, 94, 0.15);
+      --warning: #f59e0b;
+      --warning-soft: rgba(245, 158, 11, 0.15);
+      --danger: #ef4444;
+      --danger-soft: rgba(239, 68, 68, 0.15);
+      --purple: #a855f7;
+      --cyan: #22d3ee;
+      --radius: 14px;
+      --radius-sm: 10px;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+      --font: "DM Sans", system-ui, sans-serif;
+      --mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg-deep);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    /* Subtle grid background */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.12), transparent),
+        linear-gradient(rgba(42, 58, 85, 0.15) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(42, 58, 85, 0.15) 1px, transparent 1px);
+      background-size: 100% 100%, 48px 48px, 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px 20px 48px;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), #6366f1);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 4px 20px var(--accent-glow);
+      font-size: 22px;
+    }
+
+    .brand h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .stats-bar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .stat-pill {
+      background: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stat-pill strong {
+      color: var(--cyan);
+      font-family: var(--mono);
+      font-weight: 500;
+    }
+
+    /* Layout */
+    .layout {
+      display: grid;
+      grid-template-columns: 340px 1fr 300px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 1100px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border-soft);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .card-header h2 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .card-body {
+      padding: 16px 18px;
+    }
+
+    /* Action panel */
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn {
+      font-family: var(--font);
+      font-size: 0.82rem;
+      font-weight: 500;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      color: var(--text);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+    }
+
+    .btn:hover {
+      background: var(--bg-hover);
+      border-color: #3d5275;
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #4f46e5);
+      border-color: transparent;
+      color: white;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.08);
+      background: linear-gradient(135deg, var(--accent), #4f46e5);
+    }
+
+    .btn-success {
+      background: var(--success-soft);
+      border-color: rgba(34, 197, 94, 0.35);
+      color: #4ade80;
+    }
+
+    .btn-warning {
+      background: var(--warning-soft);
+      border-color: rgba(245, 158, 11, 0.35);
+      color: #fbbf24;
+    }
+
+    .btn-danger {
+      background: var(--danger-soft);
+      border-color: rgba(239, 68, 68, 0.35);
+      color: #f87171;
+    }
+
+    .btn-full {
+      grid-column: 1 / -1;
+    }
+
+    /* Forms */
+    .form-section {
+      display: none;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-soft);
+      animation: fadeIn 0.25s ease;
+    }
+
+    .form-section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    /* Visualization */
+    .viz-card {
+      min-height: 520px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .viz-toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .viz-toolbar .btn {
+      padding: 7px 12px;
+      font-size: 0.78rem;
+    }
+
+    #routeCanvas {
+      width: 100%;
+      flex: 1;
+      min-height: 400px;
+      background: radial-gradient(circle at 50% 50%, #152033 0%, var(--bg-deep) 70%);
+      border-radius: 0 0 var(--radius) var(--radius);
+      cursor: grab;
+    }
+
+    #routeCanvas:active {
+      cursor: grabbing;
+    }
+
+    /* Side panel - stop list */
+    .stop-list {
+      max-height: 380px;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .stop-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .stop-list::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    .stop-item {
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: 6px;
+    }
+
+    .stop-item:hover {
+      background: var(--bg-elevated);
+      border-color: var(--border);
+    }
+
+    .stop-item.selected {
+      background: var(--accent-soft);
+      border-color: rgba(59, 130, 246, 0.4);
+    }
+
+    .stop-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .stop-item-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .stop-item-id {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      background: var(--bg-deep);
+      padding: 2px 7px;
+      border-radius: 5px;
+    }
+
+    .stop-item-meta {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .badge-active {
+      background: var(--success-soft);
+      color: #4ade80;
+    }
+
+    .badge-closed {
+      background: var(--danger-soft);
+      color: #f87171;
+    }
+
+    .badge-construction {
+      background: var(--warning-soft);
+      color: #fbbf24;
+    }
+
+    /* Detail panel */
+    .detail-empty {
+      text-align: center;
+      padding: 40px 16px;
+      color: var(--text-dim);
+      font-size: 0.9rem;
+    }
+
+    .detail-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    .detail-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .detail-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .detail-value {
+      font-size: 0.92rem;
+      font-weight: 500;
+      text-align: right;
+    }
+
+    .neighbors {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .neighbor-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .neighbor-card span {
+      display: block;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .neighbor-card strong {
+      font-size: 0.85rem;
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toast {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 18px;
+      font-size: 0.88rem;
+      box-shadow: var(--shadow);
+      animation: slideIn 0.3s ease;
+      max-width: 340px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toast.success { border-left: 3px solid var(--success); }
+    .toast.error { border-left: 3px solid var(--danger); }
+    .toast.info { border-left: 3px solid var(--accent); }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* Modal overlay for confirm */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: none;
+      place-items: center;
+      z-index: 900;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-overlay.open {
+      display: grid;
+    }
+
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      width: min(400px, 92vw);
+      box-shadow: var(--shadow);
+    }
+
+    .modal h3 {
+      margin-bottom: 8px;
+      font-size: 1.1rem;
+    }
+
+    .modal p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    /* Legend */
+    .legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 10px 18px;
+      border-top: 1px solid var(--border-soft);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    /* Circular traversal highlight animation */
+    @keyframes pulse-node {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.4); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="brand-icon">🚌</div>
+        <div>
+          <h1>Smart Campus Shuttle Route Manager</h1>
+          <p></p>
+        </div>
+      </div>
+      <div class="stats-bar">
+        <div class="stat-pill">Stops <strong id="statTotal">0</strong></div>
+        <div class="stat-pill">Active <strong id="statActive">0</strong></div>
+        <div class="stat-pill">Route <strong>1</strong></div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <!-- Left: Actions -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Operations</h2>
+        </div>
+        <div class="card-body">
+          <div class="action-grid">
+            <button class="btn btn-primary btn-full" data-action="insert">＋ Insert at End</button>
+            <button class="btn" data-action="insertAfter">Insert After ID</button>
+            <button class="btn btn-warning" data-action="update">✎ Update Stop</button>
+            <button class="btn btn-danger" data-action="delete">✕ Delete Stop</button>
+            <button class="btn" data-action="search">⌕ Search Stop</button>
+            <button class="btn" data-action="neighbors">↔ Neighbors</button>
+            <button class="btn btn-success" data-action="activeOnly">Active Only</button>
+            <button class="btn" data-action="circular">◎ Circular Tour</button>
+            <button class="btn" data-action="forward">→ Forward</button>
+            <button class="btn" data-action="backward">← Backward</button>
+          </div>
+
+          <!-- Dynamic forms -->
+          <div id="formInsert" class="form-section">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Stop ID</label>
+                <input type="number" id="insId" placeholder="e.g. 107" />
+              </div>
+              <div class="form-group">
+                <label>Route No.</label>
+                <input type="number" id="insRoute" value="1" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" id="insName" placeholder="Stop name" />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Distance (km)</label>
+                <input type="number" id="insDist" step="0.1" value="0.5" />
+              </div>
+              <div class="form-group">
+                <label>Status</label>
+                <select id="insStatus">
+                  <option>Active</option>
+                  <option>Closed</option>
+                  <option>Under Construction</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Timing</label>
+              <input type="text" id="insTiming" placeholder="08:00 - 20:00" value="08:00 - 20:00" />
+            </div>
+            <button class="btn btn-primary btn-full" id="btnDoInsert">Insert Stop</button>
+          </div>
+
+          <div id="formInsertAfter" class="form-section">
+            <div class="form-group">
+              <label>Insert After Stop ID</label>
+              <input type="number" id="insAfterId" placeholder="Existing ID" />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>New Stop ID</label>
+                <input type="number" id="insAId" />
+              </div>
+              <div class="form-group">
+                <label>Route No.</label>
+                <input type="number" id="insARoute" value="1" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" id="insAName" />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Distance (km)</label>
+                <input type="number" id="insADist" step="0.1" value="0.5" />
+              </div>
+              <div class="form-group">
+                <label>Status</label>
+                <select id="insAStatus">
+                  <option>Active</option>
+                  <option>Closed</option>
+                  <option>Under Construction</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Timing</label>
+              <input type="text" id="insATiming" value="08:00 - 20:00" />
+            </div>
+            <button class="btn btn-primary btn-full" id="btnDoInsertAfter">Insert After</button>
+          </div>
+
+          <div id="formUpdate" class="form-section">
+            <div class="form-group">
+              <label>Stop ID to Update</label>
+              <input type="number" id="updId" />
+            </div>
+            <div class="form-group">
+              <label>New Name</label>
+              <input type="text" id="updName" />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>New Distance</label>
+                <input type="number" id="updDist" step="0.1" />
+              </div>
+              <div class="form-group">
+                <label>New Status</label>
+                <select id="updStatus">
+                  <option>Active</option>
+                  <option>Closed</option>
+                  <option>Under Construction</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>New Timing</label>
+              <input type="text" id="updTiming" />
+            </div>
+            <button class="btn btn-warning btn-full" id="btnDoUpdate">Update Stop</button>
+          </div>
+
+          <div id="formDelete" class="form-section">
+            <div class="form-group">
+              <label>Stop ID to Delete</label>
+              <input type="number" id="delId" />
+            </div>
+            <button class="btn btn-danger btn-full" id="btnDoDelete">Delete Stop</button>
+          </div>
+
+          <div id="formSearch" class="form-section">
+            <div class="form-group">
+              <label>Stop ID</label>
+              <input type="number" id="searchId" />
+            </div>
+            <button class="btn btn-primary btn-full" id="btnDoSearch">Search</button>
+          </div>
+
+          <div id="formNeighbors" class="form-section">
+            <div class="form-group">
+              <label>Stop ID</label>
+              <input type="number" id="neiId" />
+            </div>
+            <button class="btn btn-primary btn-full" id="btnDoNeighbors">Show Neighbors</button>
+          </div>
+
+          <div id="formCircular" class="form-section">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Start Stop ID</label>
+                <input type="number" id="circId" />
+              </div>
+              <div class="form-group">
+                <label>Number of Stops</label>
+                <input type="number" id="circHops" value="6" min="1" />
+              </div>
+            </div>
+            <button class="btn btn-primary btn-full" id="btnDoCircular">Start Tour</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: Visualization -->
+      <div class="card viz-card">
+        <div class="card-header">
+          <h2>Route Visualization</h2>
+          <div class="viz-toolbar">
+            <button class="btn" id="btnResetView" title="Reset view">⟲ Reset</button>
+            <button class="btn" id="btnAnimateTour" title="Animate full loop">▶ Animate Loop</button>
+          </div>
+        </div>
+        <canvas id="routeCanvas"></canvas>
+        <div class="legend">
+          <div class="legend-item"><span class="legend-dot" style="background:#22c55e"></span> Active</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span> Under Construction</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#ef4444"></span> Closed</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#3b82f6"></span> Selected</div>
+          <div class="legend-item"><span class="legend-dot" style="background:#a855f7"></span> Highlight (tour)</div>
+        </div>
+      </div>
+
+      <!-- Right: Stop list + details -->
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <div class="card">
+          <div class="card-header">
+            <h2>Stops</h2>
+            <span style="font-size:0.75rem;color:var(--text-dim)" id="listHint">Click to select</span>
+          </div>
+          <div class="stop-list" id="stopList"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Stop Details</h2>
+          </div>
+          <div class="card-body" id="detailPanel">
+            <div class="detail-empty">Select a stop to view details</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toasts"></div>
+
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal">
+      <h3 id="modalTitle">Confirm</h3>
+      <p id="modalMsg"></p>
+      <div class="modal-actions">
+        <button class="btn" id="modalCancel">Cancel</button>
+        <button class="btn btn-danger" id="modalConfirm">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========== Circular Doubly Linked List (mirrors C backend) ==========
+    class StopNode {
+      constructor(id, name, routeNumber, distance, status, timing) {
+        this.stopID = id;
+        this.name = name;
+        this.routeNumber = routeNumber;
+        this.distance = distance;
+        this.status = status;
+        this.timing = timing;
+        this.next = null;
+        this.prev = null;
+      }
+    }
+
+    class ShuttleRoute {
+      constructor() {
+        this.head = null;
+        this.totalStops = 0;
+      }
+
+      find(id) {
+        if (!this.head) return null;
+        let curr = this.head;
+        do {
+          if (curr.stopID === id) return curr;
+          curr = curr.next;
+        } while (curr !== this.head);
+        return null;
+      }
+
+      insertStop(id, name, route, dist, status, timing) {
+        if (this.find(id)) {
+          toast(`Stop ID ${id} already exists.`, "error");
+          return false;
+        }
+        const node = new StopNode(id, name, route, dist, status, timing);
+        if (!this.head) {
+          this.head = node;
+          node.next = node;
+          node.prev = node;
+        } else {
+          const tail = this.head.prev;
+          tail.next = node;
+          node.prev = tail;
+          node.next = this.head;
+          this.head.prev = node;
+        }
+        this.totalStops++;
+        toast(`Stop '${name}' (ID: ${id}) inserted.`, "success");
+        return true;
+      }
+
+      insertAfter(afterID, id, name, route, dist, status, timing) {
+        if (!this.head) {
+          return this.insertStop(id, name, route, dist, status, timing);
+        }
+        if (this.find(id)) {
+          toast(`Stop ID ${id} already exists.`, "error");
+          return false;
+        }
+        const curr = this.find(afterID);
+        if (!curr) {
+          toast(`Stop ID ${afterID} not found.`, "error");
+          return false;
+        }
+        const node = new StopNode(id, name, route, dist, status, timing);
+        node.next = curr.next;
+        node.prev = curr;
+        curr.next.prev = node;
+        curr.next = node;
+        this.totalStops++;
+        toast(`Stop '${name}' inserted after ID ${afterID}.`, "success");
+        return true;
+      }
+
+      deleteStop(id) {
+        if (!this.head) {
+          toast("Route is empty.", "error");
+          return false;
+        }
+        const curr = this.find(id);
+        if (!curr) {
+          toast(`Stop ID ${id} not found.`, "error");
+          return false;
+        }
+        if (this.totalStops === 1) {
+          this.head = null;
+        } else {
+          curr.prev.next = curr.next;
+          curr.next.prev = curr.prev;
+          if (curr === this.head) this.head = curr.next;
+        }
+        this.totalStops--;
+        toast(`Stop ID ${id} deleted.`, "success");
+        return true;
+      }
+
+      updateStop(id, name, dist, status, timing) {
+        const found = this.find(id);
+        if (!found) {
+          toast(`Stop ID ${id} not found.`, "error");
+          return false;
+        }
+        found.name = name;
+        found.distance = dist;
+        found.status = status;
+        found.timing = timing;
+        toast(`Stop ID ${id} updated.`, "success");
+        return true;
+      }
+
+      toArray() {
+        const arr = [];
+        if (!this.head) return arr;
+        let curr = this.head;
+        do {
+          arr.push(curr);
+          curr = curr.next;
+        } while (curr !== this.head);
+        return arr;
+      }
+
+      activeStops() {
+        return this.toArray().filter(s => s.status === "Active");
+      }
+    }
+
+    // ========== App State ==========
+    const route = new ShuttleRoute();
+    let selectedId = null;
+    let highlightIds = new Set();
+    let filterActiveOnly = false;
+    let animationId = null;
+
+    // Seed data (same as C main)
+    route.insertStop(101, "Main Gate", 1, 0.0, "Active", "07:30 - 21:00");
+    route.insertStop(102, "Library", 1, 0.8, "Active", "07:45 - 21:00");
+    route.insertStop(103, "Academic Block A", 1, 0.6, "Active", "08:00 - 20:30");
+    route.insertStop(104, "Hostel Circle", 1, 1.2, "Active", "08:15 - 20:45");
+    route.insertStop(105, "Sports Complex", 1, 0.9, "Under Construction", "08:30 - 19:00");
+    route.insertStop(106, "Cafeteria", 1, 0.5, "Active", "08:45 - 20:00");
+
+    // ========== UI Helpers ==========
+    function toast(msg, type = "info") {
+      const el = document.createElement("div");
+      el.className = `toast ${type}`;
+      el.textContent = msg;
+      document.getElementById("toasts").appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = "0";
+        el.style.transform = "translateX(20px)";
+        el.style.transition = "0.3s";
+        setTimeout(() => el.remove(), 300);
+      }, 2800);
+    }
+
+    function statusBadge(status) {
+      if (status === "Active") return `<span class="badge badge-active">● Active</span>`;
+      if (status === "Closed") return `<span class="badge badge-closed">● Closed</span>`;
+      return `<span class="badge badge-construction">● Construction</span>`;
+    }
+
+    function updateStats() {
+      const all = route.toArray();
+      document.getElementById("statTotal").textContent = all.length;
+      document.getElementById("statActive").textContent = all.filter(s => s.status === "Active").length;
+    }
+
+    function renderStopList() {
+      const list = document.getElementById("stopList");
+      let stops = filterActiveOnly ? route.activeStops() : route.toArray();
+      if (stops.length === 0) {
+        list.innerHTML = `<div class="detail-empty">${filterActiveOnly ? "No active stops" : "Route is empty"}</div>`;
+        return;
+      }
+      list.innerHTML = stops.map(s => `
+        <div class="stop-item ${selectedId === s.stopID ? "selected" : ""}" data-id="${s.stopID}">
+          <div class="stop-item-header">
+            <span class="stop-item-name">${s.name}</span>
+            <span class="stop-item-id">#${s.stopID}</span>
+          </div>
+          <div class="stop-item-meta">
+            ${statusBadge(s.status)}
+            <span>${s.distance.toFixed(1)} km</span>
+            <span>${s.timing}</span>
+          </div>
+        </div>
+      `).join("");
+
+      list.querySelectorAll(".stop-item").forEach(el => {
+        el.addEventListener("click", () => {
+          selectedId = Number(el.dataset.id);
+          highlightIds.clear();
+          renderAll();
+        });
+      });
+    }
+
+    function renderDetails() {
+      const panel = document.getElementById("detailPanel");
+      const stop = selectedId != null ? route.find(selectedId) : null;
+      if (!stop) {
+        panel.innerHTML = `<div class="detail-empty">Select a stop to view details</div>`;
+        return;
+      }
+      panel.innerHTML = `
+        <div class="detail-grid">
+          <div class="detail-row">
+            <span class="detail-label">Stop ID</span>
+            <span class="detail-value" style="font-family:var(--mono)">${stop.stopID}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Name</span>
+            <span class="detail-value">${stop.name}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Route</span>
+            <span class="detail-value">${stop.routeNumber}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Distance</span>
+            <span class="detail-value">${stop.distance.toFixed(2)} km</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Status</span>
+            <span class="detail-value">${statusBadge(stop.status)}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Timing</span>
+            <span class="detail-value">${stop.timing}</span>
+          </div>
+        </div>
+        <div class="neighbors">
+          <div class="neighbor-card">
+            <span>Previous</span>
+            <strong>${stop.prev.name}</strong>
+            <div style="font-size:0.72rem;color:var(--text-dim);margin-top:2px">#${stop.prev.stopID}</div>
+          </div>
+          <div class="neighbor-card">
+            <span>Next</span>
+            <strong>${stop.next.name}</strong>
+            <div style="font-size:0.72rem;color:var(--text-dim);margin-top:2px">#${stop.next.stopID}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAll() {
+      updateStats();
+      renderStopList();
+      renderDetails();
+      drawRoute();
+    }
+
+    // ========== Canvas Visualization ==========
+    const canvas = document.getElementById("routeCanvas");
+    const ctx = canvas.getContext("2d");
+    let scale = 1;
+    let offsetX = 0, offsetY = 0;
+    let isDragging = false;
+    let lastX = 0, lastY = 0;
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawRoute();
+    }
+
+    function nodeColor(stop) {
+      if (highlightIds.has(stop.stopID)) return "#a855f7";
+      if (selectedId === stop.stopID) return "#3b82f6";
+      if (stop.status === "Active") return "#22c55e";
+      if (stop.status === "Closed") return "#ef4444";
+      return "#f59e0b";
+    }
+
+    function drawRoute() {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      ctx.clearRect(0, 0, w, h);
+
+      const stops = route.toArray();
+      if (stops.length === 0) {
+        ctx.fillStyle = "#5a6b88";
+        ctx.font = "15px DM Sans";
+        ctx.textAlign = "center";
+        ctx.fillText("Route is empty — insert stops to begin", w / 2, h / 2);
+        return;
+      }
+
+      const cx = w / 2 + offsetX;
+      const cy = h / 2 + offsetY;
+      const radius = Math.min(w, h) * 0.32 * scale;
+      const n = stops.length;
+
+      // Draw connecting arcs (circular links)
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const a1 = (i / n) * Math.PI * 2 - Math.PI / 2;
+        const a2 = ((i + 1) / n) * Math.PI * 2 - Math.PI / 2;
+        const x1 = cx + Math.cos(a1) * radius;
+        const y1 = cy + Math.sin(a1) * radius;
+        const x2 = cx + Math.cos(a2) * radius;
+        const y2 = cy + Math.sin(a2) * radius;
+        if (i === 0) ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = "rgba(59, 130, 246, 0.35)";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Direction arrows on edges
+      for (let i = 0; i < n; i++) {
+        const a1 = (i / n) * Math.PI * 2 - Math.PI / 2;
+        const a2 = ((i + 1) / n) * Math.PI * 2 - Math.PI / 2;
+        const mid = (a1 + a2) / 2;
+        const mx = cx + Math.cos(mid) * radius;
+        const my = cy + Math.sin(mid) * radius;
+        const angle = Math.atan2(Math.sin(a2) - Math.sin(a1), Math.cos(a2) - Math.cos(a1));
+        drawArrow(mx, my, angle, "rgba(59, 130, 246, 0.6)");
+      }
+
+      // Draw nodes
+      stops.forEach((stop, i) => {
+        const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+        const x = cx + Math.cos(angle) * radius;
+        const y = cy + Math.sin(angle) * radius;
+        const color = nodeColor(stop);
+        const isSel = selectedId === stop.stopID;
+        const isHi = highlightIds.has(stop.stopID);
+        const r = isSel || isHi ? 22 : 18;
+
+        // Glow
+        if (isSel || isHi) {
+          ctx.beginPath();
+          ctx.arc(x, y, r + 10, 0, Math.PI * 2);
+          ctx.fillStyle = color + "33";
+          ctx.fill();
+        }
+
+        // Node circle
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = "#0b1220";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // ID inside
+        ctx.fillStyle = "#0b1220";
+        ctx.font = `bold ${isSel || isHi ? 11 : 10}px JetBrains Mono`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(String(stop.stopID), x, y);
+
+        // Label outside
+        const labelR = radius + 36;
+        const lx = cx + Math.cos(angle) * labelR;
+        const ly = cy + Math.sin(angle) * labelR;
+        ctx.fillStyle = "#e8eef8";
+        ctx.font = "600 12px DM Sans";
+        ctx.fillText(stop.name, lx, ly - 6);
+        ctx.fillStyle = "#8b9bb8";
+        ctx.font = "10px DM Sans";
+        ctx.fillText(`${stop.distance.toFixed(1)} km`, lx, ly + 8);
+      });
+
+      // Center label
+      ctx.fillStyle = "rgba(139, 155, 184, 0.5)";
+      ctx.font = "12px DM Sans";
+      ctx.textAlign = "center";
+      ctx.fillText("CIRCULAR ROUTE", cx, cy - 8);
+      ctx.font = "600 14px JetBrains Mono";
+      ctx.fillStyle = "#22d3ee";
+      ctx.fillText(`${n} stops`, cx, cy + 12);
+    }
+
+    function drawArrow(x, y, angle, color) {
+      const size = 7;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.moveTo(size, 0);
+      ctx.lineTo(-size * 0.6, size * 0.7);
+      ctx.lineTo(-size * 0.6, -size * 0.7);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Canvas interactions
+    canvas.addEventListener("mousedown", e => {
+      isDragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+    });
+    window.addEventListener("mouseup", () => { isDragging = false; });
+    window.addEventListener("mousemove", e => {
+      if (!isDragging) return;
+      offsetX += e.clientX - lastX;
+      offsetY += e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      drawRoute();
+    });
+    canvas.addEventListener("wheel", e => {
+      e.preventDefault();
+      scale *= e.deltaY > 0 ? 0.92 : 1.08;
+      scale = Math.max(0.4, Math.min(2.5, scale));
+      drawRoute();
+    }, { passive: false });
+
+    // Click node selection
+    canvas.addEventListener("click", e => {
+      if (isDragging) return;
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      const cx = w / 2 + offsetX;
+      const cy = h / 2 + offsetY;
+      const stops = route.toArray();
+      const radius = Math.min(w, h) * 0.32 * scale;
+      const n = stops.length;
+      for (let i = 0; i < n; i++) {
+        const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+        const x = cx + Math.cos(angle) * radius;
+        const y = cy + Math.sin(angle) * radius;
+        const dist = Math.hypot(mx - x, my - y);
+        if (dist < 24) {
+          selectedId = stops[i].stopID;
+          highlightIds.clear();
+          renderAll();
+          return;
+        }
+      }
+    });
+
+    document.getElementById("btnResetView").addEventListener("click", () => {
+      scale = 1;
+      offsetX = 0;
+      offsetY = 0;
+      drawRoute();
+    });
+
+    // Animate full loop
+    document.getElementById("btnAnimateTour").addEventListener("click", () => {
+      const stops = route.toArray();
+      if (stops.length === 0) return;
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+        highlightIds.clear();
+        renderAll();
+        return;
+      }
+      let idx = 0;
+      const step = () => {
+        highlightIds.clear();
+        highlightIds.add(stops[idx % stops.length].stopID);
+        selectedId = stops[idx % stops.length].stopID;
+        renderAll();
+        idx++;
+        if (idx < stops.length * 2) {
+          animationId = setTimeout(step, 1000);
+        } else {
+          animationId = null;
+          highlightIds.clear();
+          renderAll();
+        }
+      };
+      step();
+    });
+
+    // ========== Form visibility ==========
+    const formMap = {
+      insert: "formInsert",
+      insertAfter: "formInsertAfter",
+      update: "formUpdate",
+      delete: "formDelete",
+      search: "formSearch",
+      neighbors: "formNeighbors",
+      circular: "formCircular",
+    };
+
+    document.querySelectorAll("[data-action]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const action = btn.dataset.action;
+        // Hide all forms
+        document.querySelectorAll(".form-section").forEach(f => f.classList.remove("active"));
+
+        if (action === "activeOnly") {
+          filterActiveOnly = !filterActiveOnly;
+          btn.classList.toggle("btn-success", filterActiveOnly);
+          document.getElementById("listHint").textContent = filterActiveOnly ? "Active only" : "Click to select";
+          renderStopList();
+          toast(filterActiveOnly ? "Showing active stops only" : "Showing all stops", "info");
+          return;
+        }
+        if (action === "forward" || action === "backward") {
+          const stops = route.toArray();
+          if (!stops.length) { toast("Route is empty.", "error"); return; }
+
+          // Start from selected stop, or head if none selected
+          let startNode = selectedId != null ? route.find(selectedId) : route.head;
+          if (!startNode) startNode = route.head;
+
+          const direction = action === "forward" ? "next" : "prev";
+          const label = action === "forward" ? "Forward" : "Backward";
+
+          // Build path: from startNode along direction until we return to start
+          // (full circular tour starting at selected)
+          const path = [];
+          let curr = startNode;
+          do {
+            path.push(curr);
+            curr = curr[direction];
+          } while (curr !== startNode);
+
+          if (animationId) {
+            clearTimeout(animationId);
+            animationId = null;
+          }
+
+          toast(`${label} traversal from ${startNode.name} · ${path.length} stops`, "info");
+
+          let idx = 0;
+          const step = () => {
+            highlightIds.clear();
+            highlightIds.add(path[idx].stopID);
+            selectedId = path[idx].stopID;
+            renderAll();
+            idx++;
+            if (idx < path.length) {
+              animationId = setTimeout(step, 1300);
+            } else {
+              animationId = null;
+              // leave last stop selected, clear highlight after a beat
+              setTimeout(() => {
+                highlightIds.clear();
+                renderAll();
+              }, 600);
+            }
+          };
+          step();
+          return;
+        }
+
+        const formId = formMap[action];
+        if (formId) {
+          document.getElementById(formId).classList.add("active");
+          // Prefill selected ID where relevant
+          if (selectedId != null) {
+            if (action === "update") {
+              const s = route.find(selectedId);
+              if (s) {
+                document.getElementById("updId").value = s.stopID;
+                document.getElementById("updName").value = s.name;
+                document.getElementById("updDist").value = s.distance;
+                document.getElementById("updStatus").value = s.status;
+                document.getElementById("updTiming").value = s.timing;
+              }
+            }
+            if (action === "delete") document.getElementById("delId").value = selectedId;
+            if (action === "search") document.getElementById("searchId").value = selectedId;
+            if (action === "neighbors") document.getElementById("neiId").value = selectedId;
+            if (action === "circular") document.getElementById("circId").value = selectedId;
+            if (action === "insertAfter") document.getElementById("insAfterId").value = selectedId;
+          }
+        }
+      });
+    });
+
+    // ========== Action handlers ==========
+    document.getElementById("btnDoInsert").addEventListener("click", () => {
+      const id = Number(document.getElementById("insId").value);
+      const name = document.getElementById("insName").value.trim();
+      const routeNo = Number(document.getElementById("insRoute").value) || 1;
+      const dist = parseFloat(document.getElementById("insDist").value) || 0;
+      const status = document.getElementById("insStatus").value;
+      const timing = document.getElementById("insTiming").value.trim() || "08:00 - 20:00";
+      if (!id || !name) { toast("ID and Name are required.", "error"); return; }
+      if (route.insertStop(id, name, routeNo, dist, status, timing)) {
+        selectedId = id;
+        document.getElementById("formInsert").classList.remove("active");
+        renderAll();
+      }
+    });
+
+    document.getElementById("btnDoInsertAfter").addEventListener("click", () => {
+      const afterID = Number(document.getElementById("insAfterId").value);
+      const id = Number(document.getElementById("insAId").value);
+      const name = document.getElementById("insAName").value.trim();
+      const routeNo = Number(document.getElementById("insARoute").value) || 1;
+      const dist = parseFloat(document.getElementById("insADist").value) || 0;
+      const status = document.getElementById("insAStatus").value;
+      const timing = document.getElementById("insATiming").value.trim() || "08:00 - 20:00";
+      if (!afterID || !id || !name) { toast("After ID, New ID and Name required.", "error"); return; }
+      if (route.insertAfter(afterID, id, name, routeNo, dist, status, timing)) {
+        selectedId = id;
+        document.getElementById("formInsertAfter").classList.remove("active");
+        renderAll();
+      }
+    });
+
+    document.getElementById("btnDoUpdate").addEventListener("click", () => {
+      const id = Number(document.getElementById("updId").value);
+      const name = document.getElementById("updName").value.trim();
+      const dist = parseFloat(document.getElementById("updDist").value) || 0;
+      const status = document.getElementById("updStatus").value;
+      const timing = document.getElementById("updTiming").value.trim();
+      if (!id || !name) { toast("ID and Name required.", "error"); return; }
+      if (route.updateStop(id, name, dist, status, timing)) {
+        selectedId = id;
+        document.getElementById("formUpdate").classList.remove("active");
+        renderAll();
+      }
+    });
+
+    document.getElementById("btnDoDelete").addEventListener("click", () => {
+      const id = Number(document.getElementById("delId").value);
+      if (!id) { toast("Enter a Stop ID.", "error"); return; }
+      const stop = route.find(id);
+      if (!stop) { toast(`Stop ID ${id} not found.`, "error"); return; }
+      document.getElementById("modalTitle").textContent = "Delete Stop?";
+      document.getElementById("modalMsg").textContent = `Remove "${stop.name}" (ID ${id}) from the route? This cannot be undone.`;
+      document.getElementById("confirmModal").classList.add("open");
+      document.getElementById("modalConfirm").onclick = () => {
+        document.getElementById("confirmModal").classList.remove("open");
+        if (route.deleteStop(id)) {
+          if (selectedId === id) selectedId = null;
+          document.getElementById("formDelete").classList.remove("active");
+          renderAll();
+        }
+      };
+    });
+
+    document.getElementById("modalCancel").addEventListener("click", () => {
+      document.getElementById("confirmModal").classList.remove("open");
+    });
+
+    document.getElementById("btnDoSearch").addEventListener("click", () => {
+      const id = Number(document.getElementById("searchId").value);
+      const found = route.find(id);
+      if (!found) {
+        toast(`Stop ID ${id} not found.`, "error");
+        return;
+      }
+      selectedId = id;
+      highlightIds.clear();
+      highlightIds.add(id);
+      document.getElementById("formSearch").classList.remove("active");
+      renderAll();
+      toast(`Found: ${found.name}`, "success");
+      setTimeout(() => { highlightIds.clear(); drawRoute(); }, 2000);
+    });
+
+    document.getElementById("btnDoNeighbors").addEventListener("click", () => {
+      const id = Number(document.getElementById("neiId").value);
+      const found = route.find(id);
+      if (!found) {
+        toast(`Stop ID ${id} not found.`, "error");
+        return;
+      }
+      selectedId = id;
+      highlightIds.clear();
+      highlightIds.add(found.prev.stopID);
+      highlightIds.add(found.next.stopID);
+      document.getElementById("formNeighbors").classList.remove("active");
+      renderAll();
+      toast(`Neighbors of ${found.name}: ${found.prev.name} ↔ ${found.next.name}`, "info");
+    });
+
+    document.getElementById("btnDoCircular").addEventListener("click", () => {
+      const startID = Number(document.getElementById("circId").value);
+      const hops = Number(document.getElementById("circHops").value) || 6;
+      const start = route.find(startID);
+      if (!start) {
+        toast(`Starting stop ID ${startID} not found.`, "error");
+        return;
+      }
+      document.getElementById("formCircular").classList.remove("active");
+      let curr = start;
+      let i = 0;
+      const run = () => {
+        highlightIds.clear();
+        highlightIds.add(curr.stopID);
+        selectedId = curr.stopID;
+        renderAll();
+        i++;
+        if (i < hops) {
+          curr = curr.next;
+          setTimeout(run, 1000);
+        } else {
+          setTimeout(() => {
+            highlightIds.clear();
+            renderAll();
+          }, 800);
+        }
+      };
+      run();
+      toast(`Circular tour from ${start.name} · ${hops} hops`, "info");
+    });
+
+    // Init
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+    renderAll();
+  </script>
+</body>
+</html>
